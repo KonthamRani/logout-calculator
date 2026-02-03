@@ -1,0 +1,15 @@
+{
+  "name": "logout-time-calculator",
+  "version": "1.0.0",
+  "description": "Smart logout time calculator with premium themes",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}

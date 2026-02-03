@@ -1,0 +1,196 @@
+/* ===================================
+   PREMIUM THEME SELECTOR UI
+   =================================== */
+.theme-selector-wrapper {
+    position: absolute;
+    top: var(--spacing-lg);
+    right: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--glass-bg);
+    padding: 0.6rem 1.25rem;
+    border-radius: 100px;
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--glass-shadow);
+    transition: all var(--transition-normal);
+    z-index: 100;
+}
+
+.theme-selector-wrapper:hover {
+    border-color: var(--color-accent-purple);
+    transform: translateY(-2px);
+}
+
+.theme-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+}
+
+.theme-select {
+    background: transparent;
+    border: none;
+    color: var(--color-text-primary);
+    font-family: var(--font-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    padding-right: 1.5rem;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right center;
+}
+
+.theme-select option {
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    padding: 10px;
+}
+
+/* ===================================
+   THEME DEFINITIONS
+   =================================== */
+
+/* 1. Office Light (Default) */
+[data-theme="office-light"] {
+    --color-bg-primary: #f0f2f5;
+    --color-bg-secondary: #ffffff;
+    --color-bg-tertiary: #e4e6eb;
+    --color-text-primary: #1c1e21;
+    --color-text-secondary: #444746;
+    --color-text-muted: #5f6368;
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --gradient-primary: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+    --gradient-success: linear-gradient(135deg, #1e8e3e 0%, #137333 100%);
+    --color-accent-purple: #1a73e8;
+}
+
+[data-theme="office-light"] .form-input,
+[data-theme="office-light"] .form-textarea {
+    background: #f8f9fa;
+    border-color: #dadce0;
+    color: #1c1e21;
+}
+
+[data-theme="office-light"] .detail-item {
+    background: #f8f9fa;
+}
+
+[data-theme="office-light"] .breakdown-item {
+    background: #f8f9fa;
+}
+
+[data-theme="office-light"] .orb {
+    opacity: 0.05;
+}
+
+/* 2. Premium Dark */
+[data-theme="premium-dark"] {
+    --color-bg-primary: #0a0e27;
+}
+
+/* 3. Royal Midnight */
+[data-theme="royal-midnight"] {
+    --color-bg-primary: #0f0c29;
+    --color-bg-secondary: #1a1a40;
+    --color-bg-tertiary: #24243e;
+    --gradient-primary: linear-gradient(135deg, #24243e 0%, #302b63 50%, #0f0c29 100%);
+    --color-accent-purple: #8e2de2;
+    --color-accent-pink: #d6a4a4;
+}
+
+/* 4. Emerald Forest */
+[data-theme="emerald-forest"] {
+    --color-bg-primary: #002222;
+    --color-bg-secondary: #003333;
+    --color-bg-tertiary: #004444;
+    --gradient-primary: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --gradient-success: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+    --color-accent-purple: #38ef7d;
+}
+
+/* 5. Sunset Vibes */
+[data-theme="sunset-vibes"] {
+    --color-bg-primary: #2d142c;
+    --color-bg-secondary: #510a32;
+    --color-bg-tertiary: #801336;
+    --gradient-primary: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+    --gradient-success: linear-gradient(135deg, #f12711 0%, #f5af19 100%);
+    --color-accent-purple: #ee0979;
+}
+
+/* Common Adjustments for all Darker Themes */
+[data-theme="premium-dark"] .orb,
+[data-theme="royal-midnight"] .orb,
+[data-theme="emerald-forest"] .orb,
+[data-theme="sunset-vibes"] .orb {
+    opacity: 0.3;
+}
+
+/* Breakdown Container (Separate Section) */
+.breakdown-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-lg) var(--spacing-lg);
+    animation: fadeInUp 0.8s ease;
+}
+
+.breakdown-card {
+    margin-top: var(--spacing-lg);
+}
+
+.breakdown-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-normal);
+    user-select: none;
+}
+
+.breakdown-toggle:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.breakdown-toggle h4 {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin: 0;
+}
+
+.breakdown-toggle .toggle-icon {
+    transition: transform var(--transition-normal);
+}
+
+.breakdown-toggle.active .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.breakdown-toggle h4 svg {
+    color: var(--color-accent-purple);
+}
+
+/* Fix card heights */
+.main-content {
+    align-items: stretch;
+}
+
+.calculator-card,
+.result-card {
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+}

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logout Time Calculator - Smart Work Time Management</title>
+    <meta name="description"
+        content="Calculate your optimal logout time based on login time, breaks, and required work hours with our beautiful, intuitive calculator.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="theme.css">
+</head>
+
+<body>
+    <div class="background-gradient"></div>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="20" cy="20" r="18" stroke="url(#gradient)" stroke-width="3" />
+                    <path d="M20 8V20L28 24" stroke="url(#gradient)" stroke-width="3" stroke-linecap="round" />
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
+                            <stop offset="0%" stop-color="#667eea" />
+                            <stop offset="100%" stop-color="#764ba2" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1>Logout Time Calculator</h1>
+            </div>
+            <p class="tagline">Smart work time management made beautiful</p>
+
+            <!-- Theme Selector -->
+            <div class="theme-selector-wrapper">
+                <label for="themeSelect" class="theme-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        style="margin-right: 4px; vertical-align: middle;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="4"></circle>
+                        <line x1="12" y1="2" x2="12" y2="4"></line>
+                        <line x1="12" y1="20" x2="12" y2="22"></line>
+                        <line x1="2" y1="12" x2="4" y2="12"></line>
+                        <line x1="20" y1="12" x2="22" y2="12"></line>
+                    </svg>
+                    Theme
+                </label>
+                <select id="themeSelect" class="theme-select">
+                    <option value="office-light">Office Light (Default)</option>
+                    <option value="premium-dark" selected>Premium Dark</option>
+                    <option value="royal-midnight">Royal Midnight</option>
+                    <option value="emerald-forest">Emerald Forest</option>
+                    <option value="sunset-vibes">Sunset Vibes</option>
+                </select>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="calculator-card glass-card">
+                <div class="card-header">
+                    <h2>Calculate Your Logout Time</h2>
+                    <p>Enter your work details below</p>
+                </div>
+
+                <form id="calculatorForm" class="calculator-form">
+                    <div class="form-group">
+                        <label for="timestampInput" class="form-label">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Paste Your Timestamps
+                        </label>
+                        <textarea id="timestampInput" name="timestampInput" class="form-textarea" rows="8" placeholder="Paste your timestamps here, e.g.:
+11:01:55 am
+03 Feb 2026
+KGIT database new
+Info
+12:49:32 pm
+03 Feb 2026
+..."></textarea>
+                        <small class="form-hint">First timestamp is login, then alternates OUT/IN for breaks</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="workHours" class="form-label">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Required Active Work Hours
+                        </label>
+                        <input type="number" id="workHours" name="workHours" class="form-input" min="0" max="24"
+                            step="0.5" value="6">
+                        <small class="form-hint">Active work hours (excluding breaks)</small>
+                    </div>
+
+                    <button type="submit" class="btn-calculate" id="calculateBtn">
+                        <span class="btn-text">Calculate Logout Time</span>
+                        <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                    </button>
+
+                    <!-- Advanced Manual Options -->
+                    <div class="advanced-toggle" id="advancedToggle">
+                        <svg class="toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7" />
+                        </svg>
+                        <span>Advanced Options (Manual Entry)</span>
+                    </div>
+
+                    <div class="advanced-section" id="advancedSection" style="display: none;">
+                        <div class="form-group">
+                            <label for="loginTime" class="form-label">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Manual Login Time
+                            </label>
+                            <input type="time" id="loginTime" name="loginTime" class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="breakMinutes" class="form-label">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                </svg>
+                                Manual Break Time (minutes)
+                            </label>
+                            <input type="number" id="breakMinutes" name="breakMinutes" class="form-input" min="0"
+                                max="480" step="5" value="0">
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="result-card glass-card" id="resultCard">
+                <div class="result-header">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3>Your Logout Time</h3>
+                </div>
+
+                <div class="result-time" id="resultTime">
+                    --:--
+                </div>
+
+                <div class="result-details" id="resultDetails">
+                    <div class="detail-item">
+                        <span class="detail-label">Active Work Time</span>
+                        <span class="detail-value" id="activeWorkTime">-- hours</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Break Time</span>
+                        <span class="detail-value" id="breakTime">-- minutes</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Time Remaining</span>
+                        <span class="detail-value" id="timeRemaining">--</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Time in Office</span>
+                        <span class="detail-value" id="totalOfficeTime">-- hours</span>
+                    </div>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text" id="progressText">Day progress: 0%</p>
+            </div>
+        </main>
+
+        <!-- Detailed Breakdown Section (Separate) -->
+        <div class="breakdown-container" id="breakdownContainer" style="display: none;">
+            <div class="breakdown-card glass-card">
+                <div class="breakdown-toggle" id="breakdownToggle">
+                    <h4 class="breakdown-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Detailed Breakdown
+                    </h4>
+                    <svg class="toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+                <div id="breakdownContent" class="breakdown-content" style="display: none;"></div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Made with <span class="heart">❤</span> for better work-life balance</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
