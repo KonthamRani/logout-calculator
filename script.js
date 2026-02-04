@@ -21,8 +21,8 @@ class TimestampParser {
         const lines = text.split('\n').map(line => line.trim()).filter(line => line);
         const timestamps = [];
 
-        // Regex to match time patterns like "11:01:55 am" or "12:49:32 pm"
-        const timeRegex = /(\d{1,2}):(\d{2}):(\d{2})\s*(am|pm)/i;
+        // Regex to match time patterns like "11:01:55 am", "12:49:32 pm", or "13:45:01"
+        const timeRegex = /(\d{1,2}):(\d{2}):(\d{2})(?:\s*(am|pm))?/i;
 
         // Regex to match date patterns like "03 Feb 2026"
         const dateRegex = /(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/;
@@ -38,14 +38,19 @@ class TimestampParser {
                 let hours = parseInt(timeMatch[1]);
                 const minutes = parseInt(timeMatch[2]);
                 const seconds = parseInt(timeMatch[3]);
-                const meridiem = timeMatch[4].toLowerCase();
+                const meridiem = timeMatch[4] ? timeMatch[4].toLowerCase() : null;
 
-                // Convert to 24-hour format
-                if (meridiem === 'pm' && hours !== 12) {
-                    hours += 12;
-                } else if (meridiem === 'am' && hours === 12) {
-                    hours = 0;
+                // Convert to 24-hour format if meridiem is present
+                if (meridiem) {
+                    if (meridiem === 'pm' && hours < 12) {
+                        hours += 12;
+                    } else if (meridiem === 'am' && hours === 12) {
+                        hours = 0;
+                    }
                 }
+                // If no meridiem, assume hours is already in 24h format (0-23)
+                // If meridiem is present but hours > 12 (like 13:45 pm), 
+                // we treat it as already 24h and don't add 12 again.
 
                 // Look ahead for the date on the next line
                 if (i + 1 < lines.length) {
@@ -134,7 +139,7 @@ class TimestampParser {
             const inTime = timestamps[i + 1];  // Break end (IN)
 
             // Calculate break duration
-            const breakMinutes = (inTime - outTime) / (1000 * 60);
+            const breakMinutes = Math.max(0, (inTime - outTime) / (1000 * 60));
             breaks.push({
                 start: outTime,
                 end: inTime,
@@ -145,7 +150,7 @@ class TimestampParser {
             // If there's a next OUT, calculate work period from IN to OUT
             if (i + 2 < timestamps.length) {
                 const nextOut = timestamps[i + 2];
-                const workMinutes = (nextOut - inTime) / (1000 * 60);
+                const workMinutes = Math.max(0, (nextOut - inTime) / (1000 * 60));
 
                 workPeriods.push({
                     start: inTime,
@@ -156,7 +161,7 @@ class TimestampParser {
             } else {
                 // Last timestamp is IN, so work continues until now
                 const now = new Date();
-                const workMinutes = (now - inTime) / (1000 * 60);
+                const workMinutes = Math.max(0, (now - inTime) / (1000 * 60));
 
                 workPeriods.push({
                     start: inTime,
@@ -265,6 +270,14 @@ class LogoutCalculator {
         this.breakMinutesInput = document.getElementById('breakMinutes');
         this.workHoursInput = document.getElementById('workHours');
 
+        // History elements
+        this.saveHistoryBtn = document.getElementById('saveHistoryBtn');
+        this.historyList = document.getElementById('historyList');
+        this.clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+        this.history = JSON.parse(localStorage.getItem('workHistory')) || [];
+        this.currentData = null; // Store current calculation data
+
         this.init();
     }
 
@@ -320,6 +333,17 @@ class LogoutCalculator {
                 }
             });
         }
+
+        // History event listeners
+        if (this.saveHistoryBtn) {
+            this.saveHistoryBtn.addEventListener('click', () => this.saveToHistory());
+        }
+        if (this.clearHistoryBtn) {
+            this.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
+        }
+
+        // Display initial history
+        this.updateHistoryUI();
 
         // Start live time remaining update
         this.startLiveUpdate();
@@ -382,11 +406,11 @@ class LogoutCalculator {
         const logoutTimeFormatted = `${logoutHours}:${logoutMinutes}`;
 
         // Calculate progress
-        const progressPercent = Math.min(100, (activeMinutes / requiredWorkMinutes) * 100);
+        const progressPercent = Math.min(100, Math.max(0, (activeMinutes / requiredWorkMinutes) * 100));
 
         // Calculate total office time
         const loginTime = timestamps[0];
-        const totalOfficeMinutes = (now - loginTime) / (1000 * 60);
+        const totalOfficeMinutes = Math.max(0, (now - loginTime) / (1000 * 60));
 
         // Update UI
         this.updateResults({
@@ -560,14 +584,18 @@ class LogoutCalculator {
         const activeHours = (data.activeMinutes / 60).toFixed(1);
         this.activeWorkTime.textContent = `${activeHours} hours`;
 
-        // Format break time as HH:mm
+        // Update break time
         const breakHours = Math.floor(data.breakMinutes / 60);
         const breakMins = Math.round(data.breakMinutes % 60);
-        this.breakTime.textContent = `${String(breakHours).padStart(2, '0')}:${String(breakMins).padStart(2, '0')}`;
+        if (breakHours > 0) {
+            this.breakTime.textContent = `${breakHours}h ${breakMins}m`;
+        } else {
+            this.breakTime.textContent = `${breakMins} mins`;
+        }
 
         // Update time remaining
         if (data.isComplete) {
-            this.timeRemaining.textContent = 'Time to logout! 🎉';
+            this.timeRemaining.textContent = 'Work Complete! 🎉';
             this.timeRemaining.style.color = 'var(--color-accent-green)';
         } else {
             const remainingHours = Math.floor(data.remainingMinutes / 60);
@@ -587,12 +615,115 @@ class LogoutCalculator {
         this.progressFill.style.width = `${data.progressPercent}%`;
         this.progressText.textContent = `Work progress: ${Math.round(data.progressPercent)}%`;
 
+        // Store current data for saving to history
+        this.currentData = data;
+        if (this.saveHistoryBtn) {
+            this.saveHistoryBtn.style.display = 'flex';
+        }
+
         // Add celebration effect if complete
         if (data.isComplete && !this.celebrationShown) {
             this.celebrate();
             this.celebrationShown = true;
         } else if (!data.isComplete) {
             this.celebrationShown = false;
+        }
+    }
+
+    saveToHistory() {
+        if (!this.currentData) return;
+
+        // Use the date from the calculations if available, otherwise default to today
+        let displayDate = new Date().toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+
+        if (this.currentCalculation && this.currentCalculation.loginTime) {
+            displayDate = this.currentCalculation.loginTime.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        const entry = {
+            id: Date.now(),
+            date: displayDate,
+            activeHours: (this.currentData.activeMinutes / 60).toFixed(1),
+            breakMinutes: this.currentData.breakMinutes,
+            logoutTime: this.currentData.logoutTime
+        };
+
+        // Avoid duplicate entries for the same day (optional, but let's allow multiple for now or unique by date?)
+        // Let's just push for now.
+        this.history.unshift(entry);
+        localStorage.setItem('workHistory', JSON.stringify(this.history));
+        this.updateHistoryUI();
+
+        // Visual feedback
+        this.saveHistoryBtn.innerHTML = 'Saved! ✓';
+        this.saveHistoryBtn.classList.add('enabled');
+        setTimeout(() => {
+            this.saveHistoryBtn.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                </svg>
+                Save to History
+            `;
+            this.saveHistoryBtn.classList.remove('enabled');
+        }, 2000);
+    }
+
+    updateHistoryUI() {
+        if (!this.historyList) return;
+
+        if (this.history.length === 0) {
+            this.historyList.innerHTML = '<tr><td colspan="5" class="no-history">No work logs found. Your history will appear here once saved.</td></tr>';
+            return;
+        }
+
+        this.historyList.innerHTML = '';
+        this.history.forEach(entry => {
+            const row = document.createElement('tr');
+
+            // Format break time as HH:mm
+            const bHours = Math.floor(entry.breakMinutes / 60);
+            const bMins = Math.round(entry.breakMinutes % 60);
+            const formattedBreak = `${String(bHours).padStart(2, '0')}:${String(bMins).padStart(2, '0')}`;
+
+            row.innerHTML = `
+                <td>${entry.date}</td>
+                <td>${entry.activeHours}h</td>
+                <td>${formattedBreak}</td>
+                <td><strong>${entry.logoutTime}</strong></td>
+                <td>
+                    <button class="btn-delete-item" onclick="window.calculator.deleteHistoryItem(${entry.id})">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                        </svg>
+                    </button>
+                </td>
+            `;
+            this.historyList.appendChild(row);
+        });
+    }
+
+    deleteHistoryItem(id) {
+        this.history = this.history.filter(item => item.id !== id);
+        localStorage.setItem('workHistory', JSON.stringify(this.history));
+        this.updateHistoryUI();
+    }
+
+    clearHistory() {
+        if (confirm('Are you sure you want to clear all work history?')) {
+            this.history = [];
+            localStorage.setItem('workHistory', JSON.stringify(this.history));
+            this.updateHistoryUI();
         }
     }
 
@@ -669,7 +800,7 @@ document.head.appendChild(style);
 // INITIALIZE APP
 // ===================================
 document.addEventListener('DOMContentLoaded', () => {
-    new LogoutCalculator();
+    window.calculator = new LogoutCalculator();
 });
 
 // ===================================
