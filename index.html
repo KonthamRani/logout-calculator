@@ -180,69 +180,19 @@ Info
                 </div>
                 <p class="progress-text" id="progressText">Day progress: 0%</p>
 
-                <button type="button" class="btn-save-history" id="saveHistoryBtn" style="display: none;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                        <polyline points="17 21 17 13 7 13 7 21" />
-                        <polyline points="7 3 7 8 15 8" />
-                    </svg>
-                    Save to History
-                </button>
+                <!-- Detailed Breakdown inside Result Card -->
+                <div class="result-breakdown" id="breakdownSection" style="display: none;">
+                    <div class="divider">
+                        <span>Detailed Breakdown</span>
+                    </div>
+                    <div id="breakdownContent" class="breakdown-content"></div>
+                </div>
+
+
             </div>
         </main>
 
-        <!-- Detailed Breakdown Section (Separate) -->
-        <div class="breakdown-container" id="breakdownContainer" style="display: none;">
-            <div class="breakdown-card glass-card">
-                <div class="breakdown-toggle" id="breakdownToggle">
-                    <h4 class="breakdown-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        Detailed Breakdown
-                    </h4>
-                    <svg class="toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2">
-                        <path d="M19 9l-7 7-7-7" />
-                    </svg>
-                </div>
-                <div id="breakdownContent" class="breakdown-content" style="display: none;"></div>
-            </div>
-        </div>
 
-        <!-- History Section -->
-        <div class="history-container" id="historyContainer">
-            <div class="history-card glass-card">
-                <div class="history-header">
-                    <h4 class="history-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Work History
-                    </h4>
-                    <button id="clearHistoryBtn" class="btn-clear-history">Clear All</button>
-                </div>
-                <div class="history-list-wrapper">
-                    <table class="history-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Active Work</th>
-                                <th>Break Time</th>
-                                <th>Logout Time</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyList">
-                            <!-- History items will be added here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
         <footer class="footer">
             <p>Made with <span class="heart">❤</span> for better work-life balance</p>

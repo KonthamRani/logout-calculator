@@ -270,12 +270,6 @@ class LogoutCalculator {
         this.breakMinutesInput = document.getElementById('breakMinutes');
         this.workHoursInput = document.getElementById('workHours');
 
-        // History elements
-        this.saveHistoryBtn = document.getElementById('saveHistoryBtn');
-        this.historyList = document.getElementById('historyList');
-        this.clearHistoryBtn = document.getElementById('clearHistoryBtn');
-
-        this.history = JSON.parse(localStorage.getItem('workHistory')) || [];
         this.currentData = null; // Store current calculation data
 
         this.init();
@@ -318,32 +312,6 @@ class LogoutCalculator {
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
         });
-
-        // Breakdown toggle
-        const breakdownToggle = document.getElementById('breakdownToggle');
-        const breakdownContent = document.getElementById('breakdownContent');
-
-        if (breakdownToggle) {
-            breakdownToggle.addEventListener('click', () => {
-                breakdownToggle.classList.toggle('active');
-                if (breakdownContent.style.display === 'none') {
-                    breakdownContent.style.display = 'block';
-                } else {
-                    breakdownContent.style.display = 'none';
-                }
-            });
-        }
-
-        // History event listeners
-        if (this.saveHistoryBtn) {
-            this.saveHistoryBtn.addEventListener('click', () => this.saveToHistory());
-        }
-        if (this.clearHistoryBtn) {
-            this.clearHistoryBtn.addEventListener('click', () => this.clearHistory());
-        }
-
-        // Display initial history
-        this.updateHistoryUI();
 
         // Start live time remaining update
         this.startLiveUpdate();
@@ -615,11 +583,8 @@ class LogoutCalculator {
         this.progressFill.style.width = `${data.progressPercent}%`;
         this.progressText.textContent = `Work progress: ${Math.round(data.progressPercent)}%`;
 
-        // Store current data for saving to history
+        // Store current data
         this.currentData = data;
-        if (this.saveHistoryBtn) {
-            this.saveHistoryBtn.style.display = 'flex';
-        }
 
         // Add celebration effect if complete
         if (data.isComplete && !this.celebrationShown) {
@@ -630,102 +595,7 @@ class LogoutCalculator {
         }
     }
 
-    saveToHistory() {
-        if (!this.currentData) return;
 
-        // Use the date from the calculations if available, otherwise default to today
-        let displayDate = new Date().toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        });
-
-        if (this.currentCalculation && this.currentCalculation.loginTime) {
-            displayDate = this.currentCalculation.loginTime.toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-            });
-        }
-
-        const entry = {
-            id: Date.now(),
-            date: displayDate,
-            activeHours: (this.currentData.activeMinutes / 60).toFixed(1),
-            breakMinutes: this.currentData.breakMinutes,
-            logoutTime: this.currentData.logoutTime
-        };
-
-        // Avoid duplicate entries for the same day (optional, but let's allow multiple for now or unique by date?)
-        // Let's just push for now.
-        this.history.unshift(entry);
-        localStorage.setItem('workHistory', JSON.stringify(this.history));
-        this.updateHistoryUI();
-
-        // Visual feedback
-        this.saveHistoryBtn.innerHTML = 'Saved! ✓';
-        this.saveHistoryBtn.classList.add('enabled');
-        setTimeout(() => {
-            this.saveHistoryBtn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                    <polyline points="17 21 17 13 7 13 7 21" />
-                    <polyline points="7 3 7 8 15 8" />
-                </svg>
-                Save to History
-            `;
-            this.saveHistoryBtn.classList.remove('enabled');
-        }, 2000);
-    }
-
-    updateHistoryUI() {
-        if (!this.historyList) return;
-
-        if (this.history.length === 0) {
-            this.historyList.innerHTML = '<tr><td colspan="5" class="no-history">No work logs found. Your history will appear here once saved.</td></tr>';
-            return;
-        }
-
-        this.historyList.innerHTML = '';
-        this.history.forEach(entry => {
-            const row = document.createElement('tr');
-
-            // Format break time as HH:mm
-            const bHours = Math.floor(entry.breakMinutes / 60);
-            const bMins = Math.round(entry.breakMinutes % 60);
-            const formattedBreak = `${String(bHours).padStart(2, '0')}:${String(bMins).padStart(2, '0')}`;
-
-            row.innerHTML = `
-                <td>${entry.date}</td>
-                <td>${entry.activeHours}h</td>
-                <td>${formattedBreak}</td>
-                <td><strong>${entry.logoutTime}</strong></td>
-                <td>
-                    <button class="btn-delete-item" onclick="window.calculator.deleteHistoryItem(${entry.id})">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-                        </svg>
-                    </button>
-                </td>
-            `;
-            this.historyList.appendChild(row);
-        });
-    }
-
-    deleteHistoryItem(id) {
-        this.history = this.history.filter(item => item.id !== id);
-        localStorage.setItem('workHistory', JSON.stringify(this.history));
-        this.updateHistoryUI();
-    }
-
-    clearHistory() {
-        if (confirm('Are you sure you want to clear all work history?')) {
-            this.history = [];
-            localStorage.setItem('workHistory', JSON.stringify(this.history));
-            this.updateHistoryUI();
-        }
-    }
 
     startLiveUpdate() {
         // Update every 30 seconds
