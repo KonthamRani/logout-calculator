@@ -104,8 +104,8 @@ class TimestampParser {
      * - Odd indices (1, 3, 5...): OUT (break start)
      * - Even indices (2, 4, 6...): IN (break end)
      */
-    static calculateBreaksAlternating(timestamps) {
-        if (timestamps.length < 2) {
+    static calculateBreaksAlternating(timestamps, referenceTime = new Date()) {
+        if (timestamps.length === 0) {
             return {
                 breaks: [],
                 totalBreakMinutes: 0,
@@ -119,72 +119,57 @@ class TimestampParser {
         let totalBreakMinutes = 0;
         let totalActiveMinutes = 0;
 
-        // First work period: from login (index 0) to first OUT (index 1)
-        if (timestamps.length >= 2) {
-            const loginTime = timestamps[0];
-            const firstOut = timestamps[1];
-            const workMinutes = (firstOut - loginTime) / (1000 * 60);
+        // Process all intervals between timestamps
+        for (let i = 0; i < timestamps.length - 1; i++) {
+            const start = timestamps[i];
+            const end = timestamps[i + 1];
+            const minutes = (end - start) / (1000 * 60);
 
-            workPeriods.push({
-                start: loginTime,
-                end: firstOut,
-                minutes: workMinutes
-            });
-            totalActiveMinutes += workMinutes;
-        }
-
-        // Process remaining timestamps in pairs (IN, OUT)
-        for (let i = 1; i < timestamps.length - 1; i += 2) {
-            const outTime = timestamps[i];     // Break start (OUT)
-            const inTime = timestamps[i + 1];  // Break end (IN)
-
-            // Calculate break duration
-            const breakMinutes = Math.max(0, (inTime - outTime) / (1000 * 60));
-            breaks.push({
-                start: outTime,
-                end: inTime,
-                minutes: breakMinutes
-            });
-            totalBreakMinutes += breakMinutes;
-
-            // If there's a next OUT, calculate work period from IN to OUT
-            if (i + 2 < timestamps.length) {
-                const nextOut = timestamps[i + 2];
-                const workMinutes = Math.max(0, (nextOut - inTime) / (1000 * 60));
-
+            if (i % 2 === 0) {
+                // Even index interval (0-1, 2-3...): Work
                 workPeriods.push({
-                    start: inTime,
-                    end: nextOut,
-                    minutes: workMinutes
+                    start: start,
+                    end: end,
+                    minutes: minutes
                 });
-                totalActiveMinutes += workMinutes;
+                totalActiveMinutes += minutes;
             } else {
-                // Last timestamp is IN, so work continues until now
-                const now = new Date();
-                const workMinutes = Math.max(0, (now - inTime) / (1000 * 60));
-
-                workPeriods.push({
-                    start: inTime,
-                    end: now,
-                    minutes: workMinutes
+                // Odd index interval (1-2, 3-4...): Break
+                breaks.push({
+                    start: start,
+                    end: end,
+                    minutes: minutes
                 });
-                totalActiveMinutes += workMinutes;
+                totalBreakMinutes += minutes;
             }
         }
 
-        // If last timestamp is OUT (odd number of timestamps), person is still on break
-        if (timestamps.length % 2 === 0) {
-            const lastOut = timestamps[timestamps.length - 1];
-            const now = new Date();
-            const ongoingBreakMinutes = (now - lastOut) / (1000 * 60);
+        // Handle the ongoing period from the last timestamp to the reference time
+        const lastTS = timestamps[timestamps.length - 1];
 
-            breaks.push({
-                start: lastOut,
-                end: now,
-                minutes: ongoingBreakMinutes,
-                ongoing: true
-            });
-            totalBreakMinutes += ongoingBreakMinutes;
+        // Only add ongoing period if reference time is after last timestamp
+        if (referenceTime > lastTS) {
+            const lastMinutes = (referenceTime - lastTS) / (1000 * 60);
+
+            if (timestamps.length % 2 === 1) {
+                // Odd number of timestamps: Last period is ongoing Work
+                workPeriods.push({
+                    start: lastTS,
+                    end: referenceTime,
+                    minutes: lastMinutes,
+                    ongoing: true
+                });
+                totalActiveMinutes += lastMinutes;
+            } else {
+                // Even number of timestamps: Last period is ongoing Break
+                breaks.push({
+                    start: lastTS,
+                    end: referenceTime,
+                    minutes: lastMinutes,
+                    ongoing: true
+                });
+                totalBreakMinutes += lastMinutes;
+            }
         }
 
         return {
@@ -353,32 +338,51 @@ class LogoutCalculator {
             return;
         }
 
+        // Determine if this is "Live" (today) or "History" (past/yesterday)
+        const now = new Date();
+        const lastTimestamp = timestamps[timestamps.length - 1];
+
+        // If the last timestamp is not from today, we treat it as a finished history record
+        const isToday = lastTimestamp.getDate() === now.getDate() &&
+            lastTimestamp.getMonth() === now.getMonth() &&
+            lastTimestamp.getFullYear() === now.getFullYear();
+
         // Calculate breaks and active time using alternating IN/OUT pattern
         const { breaks, totalBreakMinutes, activeMinutes, workPeriods } =
-            TimestampParser.calculateBreaksAlternating(timestamps);
+            TimestampParser.calculateBreaksAlternating(timestamps, isToday ? now : lastTimestamp);
 
         // Get required work hours
         const requiredWorkHours = parseFloat(this.workHoursInput.value) || 6;
         const requiredWorkMinutes = requiredWorkHours * 60;
 
-        // Calculate remaining active work time needed
-        const remainingActiveMinutes = Math.max(0, requiredWorkMinutes - activeMinutes);
+        let logoutTimeFormatted = "--:--";
+        let remainingActiveMinutes = 0;
+        let isComplete = false;
 
-        // Calculate logout time
-        const now = new Date();
-        const logoutDate = new Date(now.getTime() + remainingActiveMinutes * 60000);
+        if (isToday) {
+            // Live mode: calculate when to logout
+            remainingActiveMinutes = Math.max(0, requiredWorkMinutes - activeMinutes);
+            const logoutDate = new Date(now.getTime() + remainingActiveMinutes * 60000);
 
-        // Format logout time
-        const logoutHours = String(logoutDate.getHours()).padStart(2, '0');
-        const logoutMinutes = String(logoutDate.getMinutes()).padStart(2, '0');
-        const logoutTimeFormatted = `${logoutHours}:${logoutMinutes}`;
+            const logoutHours = String(logoutDate.getHours()).padStart(2, '0');
+            const logoutMinutes = String(logoutDate.getMinutes()).padStart(2, '0');
+            logoutTimeFormatted = `${logoutHours}:${logoutMinutes}`;
+            isComplete = remainingActiveMinutes <= 0;
+        } else {
+            // History mode: just show what was worked
+            const lastHours = String(lastTimestamp.getHours()).padStart(2, '0');
+            const lastMinutes = String(lastTimestamp.getMinutes()).padStart(2, '0');
+            logoutTimeFormatted = `${lastHours}:${lastMinutes} (End)`;
+            remainingActiveMinutes = 0;
+            isComplete = true; // It's in the past, so it's "complete"
+        }
+
+        // Calculate total office time (from first to last timestamp)
+        const loginTime = timestamps[0];
+        const totalOfficeMinutes = Math.max(0, (lastTimestamp - loginTime) / (1000 * 60));
 
         // Calculate progress
         const progressPercent = Math.min(100, Math.max(0, (activeMinutes / requiredWorkMinutes) * 100));
-
-        // Calculate total office time
-        const loginTime = timestamps[0];
-        const totalOfficeMinutes = Math.max(0, (now - loginTime) / (1000 * 60));
 
         // Update UI
         this.updateResults({
@@ -388,22 +392,23 @@ class LogoutCalculator {
             remainingMinutes: remainingActiveMinutes,
             progressPercent: progressPercent,
             totalOfficeMinutes: totalOfficeMinutes,
-            isComplete: remainingActiveMinutes <= 0,
-            breakCount: breaks.length
+            isComplete: isComplete,
+            breakCount: breaks.length,
+            isHistory: !isToday
         });
 
         // Display breakdown
         this.displayBreakdown(workPeriods, breaks);
 
-        // Store data for live updates
-        this.currentCalculation = {
+        // Store data for live updates (only if it's today)
+        this.currentCalculation = isToday ? {
             mode: 'timestamp',
             timestamps,
             breaks,
             requiredWorkMinutes,
             loginTime,
             workPeriods
-        };
+        } : null;
     }
 
     calculateManual() {
@@ -516,6 +521,13 @@ class LogoutCalculator {
 
         allPeriods.sort((a, b) => a.start - b.start);
 
+        // Helper function to format duration to HH:mm
+        const formatDuration = (totalMinutes) => {
+            const h = Math.floor(Math.abs(totalMinutes) / 60);
+            const m = Math.round(Math.abs(totalMinutes) % 60);
+            return `${h}:${String(m).padStart(2, '0')}`;
+        };
+
         // Display periods
         allPeriods.forEach(period => {
             const item = document.createElement('div');
@@ -533,7 +545,7 @@ class LogoutCalculator {
 
             const value = document.createElement('span');
             value.className = 'breakdown-item-value';
-            value.textContent = `${Math.round(period.minutes)} min`;
+            value.textContent = formatDuration(period.minutes);
 
             item.appendChild(label);
             item.appendChild(value);
@@ -545,49 +557,58 @@ class LogoutCalculator {
         // Activate result card
         this.resultCard.classList.add('active');
 
-        // Update logout time
-        this.resultTime.textContent = data.logoutTime;
-
-        // Update details
-        const activeHours = (data.activeMinutes / 60).toFixed(1);
-        this.activeWorkTime.textContent = `${activeHours} hours`;
-
-        // Update break time
-        const breakHours = Math.floor(data.breakMinutes / 60);
-        const breakMins = Math.round(data.breakMinutes % 60);
-        if (breakHours > 0) {
-            this.breakTime.textContent = `${breakHours}h ${breakMins}m`;
+        // Update logout time or History label
+        const resultHeader = this.resultCard.querySelector('.result-header h3');
+        if (data.isHistory) {
+            resultHeader.textContent = 'Shift Summary (Past)';
+            this.resultTime.textContent = data.logoutTime; // This will show "HH:MM (End)"
         } else {
-            this.breakTime.textContent = `${breakMins} mins`;
+            resultHeader.textContent = 'Your Logout Time';
+            this.resultTime.textContent = data.logoutTime;
         }
 
+        // Helper to format HH:mm
+        const toHHMM = (totalMinutes) => {
+            const h = Math.floor(totalMinutes / 60);
+            const m = Math.round(totalMinutes % 60);
+            return `${h}:${String(m).padStart(2, '0')}`;
+        };
+
+        // Update details
+        this.activeWorkTime.textContent = toHHMM(data.activeMinutes);
+
+        // Update break time
+        this.breakTime.textContent = toHHMM(data.breakMinutes);
+
         // Update time remaining
-        if (data.isComplete) {
+        const remainingLabel = this.resultCard.querySelector('.detail-item:nth-child(3) .detail-label');
+        if (data.isHistory) {
+            remainingLabel.textContent = 'Status';
+            this.timeRemaining.textContent = 'Shift Processed';
+            this.timeRemaining.style.color = 'var(--color-text-secondary)';
+        } else if (data.isComplete) {
+            remainingLabel.textContent = 'Time Remaining';
             this.timeRemaining.textContent = 'Work Complete! 🎉';
             this.timeRemaining.style.color = 'var(--color-accent-green)';
         } else {
-            const remainingHours = Math.floor(data.remainingMinutes / 60);
-            const remainingMins = Math.round(data.remainingMinutes % 60);
-            const remainingText = remainingHours > 0
-                ? `${remainingHours}h ${remainingMins}m`
-                : `${remainingMins}m`;
-            this.timeRemaining.textContent = remainingText;
+            remainingLabel.textContent = 'Time Remaining';
+            this.timeRemaining.textContent = toHHMM(data.remainingMinutes);
             this.timeRemaining.style.color = 'var(--color-text-primary)';
         }
 
         // Update total office time
-        const officeHours = (data.totalOfficeMinutes / 60).toFixed(1);
-        this.totalOfficeTime.textContent = `${officeHours} hours`;
+        this.totalOfficeTime.textContent = toHHMM(data.totalOfficeMinutes);
 
         // Update progress bar
         this.progressFill.style.width = `${data.progressPercent}%`;
-        this.progressText.textContent = `Work progress: ${Math.round(data.progressPercent)}%`;
+        const progressPrefix = data.isHistory ? 'Shift work' : 'Day progress';
+        this.progressText.textContent = `${progressPrefix}: ${Math.round(data.progressPercent)}%`;
 
         // Store current data
         this.currentData = data;
 
-        // Add celebration effect if complete
-        if (data.isComplete && !this.celebrationShown) {
+        // Add celebration effect if complete and NOT history
+        if (data.isComplete && !data.isHistory && !this.celebrationShown) {
             this.celebrate();
             this.celebrationShown = true;
         } else if (!data.isComplete) {
