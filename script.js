@@ -347,9 +347,13 @@ class LogoutCalculator {
             lastTimestamp.getMonth() === now.getMonth() &&
             lastTimestamp.getFullYear() === now.getFullYear();
 
+        // Use current time as reference for live today calculations, 
+        // otherwise use the last timestamp for history records.
+        const referenceTime = isToday ? now : lastTimestamp;
+
         // Calculate breaks and active time using alternating IN/OUT pattern
         const { breaks, totalBreakMinutes, activeMinutes, workPeriods } =
-            TimestampParser.calculateBreaksAlternating(timestamps, isToday ? now : lastTimestamp);
+            TimestampParser.calculateBreaksAlternating(timestamps, referenceTime);
 
         // Get required work hours
         const requiredWorkHours = parseFloat(this.workHoursInput.value) || 6;
@@ -377,9 +381,9 @@ class LogoutCalculator {
             isComplete = true; // It's in the past, so it's "complete"
         }
 
-        // Calculate total office time (from first to last timestamp)
+        // Calculate total office time (from first to reference time)
         const loginTime = timestamps[0];
-        const totalOfficeMinutes = Math.max(0, (lastTimestamp - loginTime) / (1000 * 60));
+        const totalOfficeMinutes = Math.max(0, (referenceTime - loginTime) / (1000 * 60));
 
         // Calculate progress
         const progressPercent = Math.min(100, Math.max(0, (activeMinutes / requiredWorkMinutes) * 100));
