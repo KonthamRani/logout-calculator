@@ -180,6 +180,43 @@ Info
                 </div>
                 <p class="progress-text" id="progressText">Day progress: 0%</p>
 
+                <!-- Alarm Settings -->
+                <div class="alarm-settings-wrapper">
+                    <div class="alarm-label">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
+                        </svg>
+                        <span>Logout Alarm</span>
+                    </div>
+                    <div class="alarm-options-row">
+                        <div class="alarm-options" id="alarmOptions">
+                            <button type="button" class="alarm-chip active" data-value="0">Off</button>
+                            <button type="button" class="alarm-chip" data-value="5">5m before</button>
+                            <button type="button" class="alarm-chip" data-value="10">10m before</button>
+                            <button type="button" id="testAlarmBtn" class="alarm-chip test-btn" title="Test sound">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <path
+                                        d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <select id="soundSelect" class="sound-select" title="Choose alarm sound">
+                            <option value="chime">Chime Sound</option>
+                            <option value="bell">Digital Bell</option>
+                            <option value="alert">Tech Alert</option>
+                        </select>
+                    </div>
+                    <small class="notification-hint">Alarm will play at chosen time and on completion</small>
+                </div>
+
+                <!-- Hidden audio for alarm -->
+                <audio id="alarmSound" preload="auto">
+                    <source id="alarmSource" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+                        type="audio/mpeg">
+                </audio>
+
                 <!-- Detailed Breakdown inside Result Card -->
                 <div class="result-breakdown" id="breakdownSection" style="display: none;">
                     <div class="divider">
@@ -187,8 +224,20 @@ Info
                     </div>
                     <div id="breakdownContent" class="breakdown-content"></div>
                 </div>
+            </div>
 
-
+            <!-- History Section -->
+            <div class="history-card glass-card" id="historyCard">
+                <div class="card-header">
+                    <div class="header-with-action">
+                        <h3>Work History</h3>
+                        <button id="clearHistoryBtn" class="btn-text-only">Clear All</button>
+                    </div>
+                    <p>Your completed shifts from previous days</p>
+                </div>
+                <div id="historyList" class="history-list">
+                    <div class="history-empty">No history recorded yet. Complete a shift to see it here!</div>
+                </div>
             </div>
         </main>
 

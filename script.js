@@ -256,6 +256,10 @@ class LogoutCalculator {
         this.workHoursInput = document.getElementById('workHours');
 
         this.currentData = null; // Store current calculation data
+        this.notificationsEnabled = false;
+        this.alarmSound = document.getElementById('alarmSound');
+        this.notifiedFiveMin = false;
+        this.notifiedComplete = false;
 
         this.init();
     }
@@ -298,8 +302,181 @@ class LogoutCalculator {
             localStorage.setItem('theme', newTheme);
         });
 
+        // Alarm Settings
+        this.alarmMinutesBefore = 0;
+        const alarmChips = document.querySelectorAll('.alarm-chip:not(.test-btn)');
+        alarmChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                // Update active state
+                alarmChips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                
+                // Update value
+                this.alarmMinutesBefore = parseInt(chip.dataset.value);
+                
+                // Request permission if enabled
+                if (this.alarmMinutesBefore > 0 && "Notification" in window) {
+                    Notification.requestPermission();
+                }
+
+                // Reset notification flags
+                this.notifiedLeadTime = false;
+                this.notifiedComplete = false;
+            });
+        });
+
+        // Sound Library
+        this.soundSelect = document.getElementById('soundSelect');
+        this.alarmSound = document.getElementById('alarmSound');
+        this.alarmSource = document.getElementById('alarmSource');
+        
+        const soundMap = {
+            'chime': 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3',
+            'bell': 'https://assets.mixkit.co/active_storage/sfx/1017/1017-preview.mp3',
+            'alert': 'https://assets.mixkit.co/active_storage/sfx/2190/2190-preview.mp3'
+        };
+
+        this.soundSelect.addEventListener('change', () => {
+            const soundUrl = soundMap[this.soundSelect.value];
+            this.alarmSource.src = soundUrl;
+            this.alarmSound.load(); // Reload audio with new source
+            
+            // Play a short preview
+            this.alarmSound.currentTime = 0;
+            this.alarmSound.play().catch(e => console.log("Preview blocked:", e));
+            setTimeout(() => {
+                this.alarmSound.pause();
+                this.alarmSound.currentTime = 0;
+            }, 1000);
+        });
+
+        // History Management
+        this.historyList = document.getElementById('historyList');
+        this.clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        this.history = JSON.parse(localStorage.getItem('logout_history') || '[]');
+        
+        this.clearHistoryBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear all history?')) {
+                this.history = [];
+                this.saveHistory();
+                this.renderHistory();
+            }
+        });
+
+        this.renderHistory();
+
+        // Test Alarm
+        this.testAlarmBtn = document.getElementById('testAlarmBtn');
+        if (this.testAlarmBtn) {
+            this.testAlarmBtn.addEventListener('click', () => {
+                this.playAlarm("Alarm Test", "This is how the logout alarm sounds!");
+            });
+        }
+
         // Start live time remaining update
         this.startLiveUpdate();
+    }
+
+    saveHistory() {
+        localStorage.setItem('logout_history', JSON.stringify(this.history));
+    }
+
+    renderHistory() {
+        if (!this.historyList) return;
+        
+        if (this.history.length === 0) {
+            this.historyList.innerHTML = '<div class="history-empty">No history recorded yet. Complete a shift to see it here!</div>';
+            return;
+        }
+
+        // Sort history by date (newest first)
+        const sortedHistory = [...this.history].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        this.historyList.innerHTML = '';
+        sortedHistory.forEach(item => {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            
+            const date = new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            
+            historyItem.innerHTML = `
+                <div class="history-date">${date}</div>
+                <div class="history-work">Work: ${item.activeTime}h</div>
+                <div class="history-breaks">Breaks: ${item.breakTime}m</div>
+                <div class="history-total">Total: ${item.totalTime}h</div>
+            `;
+            
+            this.historyList.appendChild(historyItem);
+        });
+    }
+
+    addToHistory(data) {
+        // Create a unique key for the day (e.g. "2026-05-26")
+        const dateKey = new Date().toISOString().split('T')[0];
+        
+        // Find if we already have an entry for today
+        const existingIndex = this.history.findIndex(item => item.id === dateKey);
+        
+        const historyEntry = {
+            id: dateKey,
+            date: new Date().toISOString(),
+            activeTime: (data.activeMinutes / 60).toFixed(2),
+            breakTime: data.breakMinutes,
+            totalTime: (data.totalOfficeMinutes / 60).toFixed(2)
+        };
+
+        if (existingIndex > -1) {
+            // Update existing entry
+            this.history[existingIndex] = historyEntry;
+        } else {
+            // Add new entry
+            this.history.push(historyEntry);
+        }
+
+        this.saveHistory();
+        this.renderHistory();
+    }
+
+    checkAlarm(remainingMinutes, isComplete) {
+        if (this.alarmMinutesBefore === 0 && !isComplete) return;
+
+        // Trigger at lead time (5m or 10m)
+        if (this.alarmMinutesBefore > 0 && remainingMinutes <= this.alarmMinutesBefore && remainingMinutes > 0 && !this.notifiedLeadTime) {
+            this.playAlarm(`Log out soon!`, `${remainingMinutes} minutes left until your daily goal.`);
+            this.notifiedLeadTime = true;
+        }
+
+        // Trigger on completion (always if any alarm is set, or if it's the first time reaching zero)
+        if (isComplete && !this.notifiedComplete) {
+            // Only play completion alarm if some alarm was set OR it's a fresh completion
+            this.playAlarm("Work Complete! 🎉", "You've reached your daily goal. Time to logout!");
+            this.notifiedComplete = true;
+        }
+
+        // Reset flags if time changes (e.g. user adds more time or timestamps)
+        if (remainingMinutes > this.alarmMinutesBefore) {
+            this.notifiedLeadTime = false;
+        }
+        if (!isComplete) {
+            this.notifiedComplete = false;
+        }
+    }
+
+    playAlarm(title, body) {
+        // Play sound
+        this.alarmSound.currentTime = 0;
+        this.alarmSound.play().catch(e => console.log("Failed to play alarm:", e));
+
+        // Show browser notification
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, {
+                body: body,
+                icon: 'logo.png'
+            });
+        } else {
+            // Fallback for no notifications
+            alert(`${title}\n${body}`);
+        }
     }
 
     setDefaultLoginTime() {
@@ -610,6 +787,11 @@ class LogoutCalculator {
 
         // Store current data
         this.currentData = data;
+
+        // Check for alarms if not history
+        if (!data.isHistory) {
+            this.checkAlarm(data.remainingMinutes, data.isComplete);
+        }
 
         // Add celebration effect if complete and NOT history
         if (data.isComplete && !data.isHistory && !this.celebrationShown) {

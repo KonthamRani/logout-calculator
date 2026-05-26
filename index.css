@@ -822,3 +822,225 @@ body {
     outline: 2px solid var(--color-accent-purple);
     outline-offset: 2px;
 }
+
+/* ===================================
+   MAIN CONTENT LAYOUT UPDATE
+   =================================== */
+.main-content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    align-items: start;
+}
+
+/* History spans full width below the two cards */
+.history-card {
+    grid-column: 1 / -1;
+    margin-top: var(--spacing-md);
+}
+
+.header-with-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-text-only {
+    background: transparent;
+    border: none;
+    color: var(--color-accent-pink);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.3s ease;
+}
+
+.btn-text-only:hover {
+    background: rgba(240, 147, 251, 0.1);
+}
+
+/* ===================================
+   ALARM SETTINGS UPDATE
+   =================================== */
+.alarm-settings-wrapper {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.alarm-options-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.sound-select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    color: var(--color-text-secondary);
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sound-select:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-primary);
+}
+
+.sound-select option {
+    background: #1a1a2e;
+    color: white;
+}
+
+/* ===================================
+   HISTORY LIST
+   =================================== */
+.history-list {
+    margin-top: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.history-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    padding: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+    align-items: center;
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(5px);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.history-date {
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.history-work {
+    color: var(--color-accent-green);
+    font-weight: 600;
+}
+
+.history-breaks {
+    color: var(--color-accent-pink);
+}
+
+.history-total {
+    color: var(--color-text-secondary);
+    text-align: right;
+}
+
+.history-empty {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--color-text-muted);
+    font-style: italic;
+    opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+    .history-item {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-xs);
+    }
+    .history-total {
+        text-align: left;
+    }
+}
+
+.alarm-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.alarm-label svg {
+    color: var(--color-accent-purple);
+}
+
+.alarm-options {
+    display: flex;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.3rem;
+    border-radius: 100px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.alarm-chip {
+    padding: 0.5rem 1rem;
+    border-radius: 100px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.alarm-chip:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+}
+
+.alarm-chip.active {
+    background: var(--gradient-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.alarm-chip.test-btn {
+    padding: 0.5rem;
+}
+
+.alarm-chip.test-btn svg {
+    color: var(--color-accent-pink);
+    display: block;
+}
+
+.alarm-chip .bell-animated {
+    animation: bell-ring 2s infinite ease-in-out;
+}
+
+@keyframes bell-ring {
+    0%, 100% { transform: rotate(0); }
+    10%, 30% { transform: rotate(15deg); }
+    20%, 40% { transform: rotate(-15deg); }
+    50% { transform: rotate(0); }
+}
+
+.notification-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    opacity: 0.7;
+}
